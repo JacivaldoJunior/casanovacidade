@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagamento Casa Nova Cidade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .paid {
+      background-color: #d1fae5;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+    <h1 class="text-3xl font-bold mb-4 text-green-700">Pagamento Casa Nova Cidade</h1>
+    
+    <div class="flex flex-col md:flex-row gap-6">
+      <!-- Parte Esquerda: Controle -->
+      <div class="flex-1">
+        <p class="mb-2 text-lg">💰 <strong>Entrada:</strong> R$ 50.000</p>
+        <p class="mb-4 text-lg">📅 <strong>Mensalidade:</strong> R$ 1.000</p>
+
+        <div id="parcelas" class="space-y-2"></div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button onclick="mostrarPagas()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            Ver parcelas pagas ✅
+          </button>
+          <button onclick="adicionarNovoMes()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            ➕ Adicionar novo mês
+          </button>
+        </div>
+      </div>
+
+      <!-- Parte Direita: Imagem -->
+      <div class="md:w-1/2">
+        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" alt="Casa" class="rounded-xl shadow-md" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Input oculto para comprovante -->
+  <input type="file" id="comprovanteInput" class="hidden" accept="image/*,application/pdf" />
+
+  <script>
+    const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+    function getMesesSalvos() {
+      const salvos = localStorage.getItem('meses_pagamento');
+      if (salvos) {
+        return JSON.parse(salvos);
+      } else {
+        const iniciais = [
+          "Jun/25", "Jul/25", "Ago/25", "Set/25", "Out/25", "Nov/25", "Dez/25",
+          "Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26",
+          "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"
+        ];
+        localStorage.setItem('meses_pagamento', JSON.stringify(iniciais));
+        return iniciais;
+      }
+    }
+
+    function salvarMeses(meses) {
+      localStorage.setItem('meses_pagamento', JSON.stringify(meses));
+    }
+
+    function adicionarNovoMes() {
+      let meses = getMesesSalvos();
+      const ultimo = meses[meses.length - 1];
+      let [mesTexto, anoTexto] = ultimo.split('/');
+      let indiceMes = nomesMeses.indexOf(mesTexto);
+      let ano = parseInt(anoTexto);
+
+      indiceMes++;
+      if (indiceMes > 11) {
+        indiceMes = 0;
+        ano++;
+      }
+
+      const novoMes = `${nomesMeses[indiceMes]}/${ano}`;
+      meses.push(novoMes);
+      salvarMeses(meses);
+      carregarParcelas();
+    }
+
+    function carregarParcelas() {
+      const meses = getMesesSalvos();
+      const container = document.getElementById('parcelas');
+      container.innerHTML = '';
+
+      meses.forEach((mes, index) => {
+        const pago = localStorage.getItem(`parcela_${index}_paga`) === 'true';
+        const comprovante = localStorage.getItem(`parcela_${index}_comprovante`);
+
+        const div = document.createElement('div');
+        div.className = `flex items-center justify-between p-3 border rounded-lg ${pago ? 'paid' : 'bg-gray-50'}`;
+
+        div.innerHTML = `
+          <div>
+            <p class="font-medium text-lg">${mes}</p>
+            <p class="text-sm">Valor: R$ 1.000</p>
+            ${comprovante ? `<p class='text-xs text-green-600'>📎 Comprovante salvo</p>` : ''}
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="alternarPagamento(${index})" class="${pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">
+              ${pago ? '✅ Pago' : '❌ Falta pagar'}
+            </button>
+            <button onclick="enviarComprovante(${index})" class="text-sm text-blue-600 underline">Salvar comprovante</button>
+          </div>
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    function alternarPagamento(index) {
+      const atual = localStorage.getItem(`parcela_${index}_paga`) === 'true';
+      localStorage.setItem(`parcela_${index}_paga`, !atual);
+      carregarParcelas();
+    }
+
+    function enviarComprovante(index) {
+      const input = document.getElementById('comprovanteInput');
+      input.onchange = () => {
+        const file = input.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function () {
+            const base64 = reader.result;
+            localStorage.setItem(`parcela_${index}_comprovante`, base64);
+            carregarParcelas();
+            alert("Comprovante salvo com sucesso!");
+          };
+          reader.readAsDataURL(file);
+        }
+        input.value = '';
+      };
+      input.click();
+    }
+
+    function mostrarPagas() {
+      const meses = getMesesSalvos();
+      let pagas = [];
+      meses.forEach((mes, index) => {
+        if (localStorage.getItem(`parcela_${index}_paga`) === 'true') {
+          pagas.push(mes);
+        }
+      });
+      if (pagas.length > 0) {
+        alert(`Parcelas pagas:\n\n${pagas.join('\n')}`);
+      } else {
+        alert("Nenhuma parcela paga ainda.");
+      }
+    }
+
+    window.onload = carregarParcelas;
+  </script>
+</body>
+</html>
