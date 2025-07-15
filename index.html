@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pagamento Casa Nova Cidade</title>
+  <title>Pagamento Casa Rio das Ostras</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .paid {
@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
   <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
-    <h1 class="text-3xl font-bold mb-4 text-green-700">Pagamento Casa Nova Cidade</h1>
+    <h1 class="text-3xl font-bold mb-4 text-green-700">Pagamento Casa Rio das Ostras</h1>
     
     <div class="flex flex-col md:flex-row gap-6">
       <!-- Parte Esquerda: Controle -->
@@ -92,35 +92,63 @@
       meses.forEach((mes, index) => {
         const pago = localStorage.getItem(`parcela_${index}_paga`) === 'true';
         const comprovante = localStorage.getItem(`parcela_${index}_comprovante`);
+        const bloqueado = localStorage.getItem(`parcela_${index}_bloqueada`) === 'true';
 
         const div = document.createElement('div');
-        div.className = `flex items-center justify-between p-3 border rounded-lg ${pago ? 'paid' : 'bg-gray-50'}`;
+        div.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded-lg space-y-2 md:space-y-0 ${pago ? 'paid' : 'bg-gray-50'}`;
 
-        div.innerHTML = `
+        let innerHTML = `
           <div>
             <p class="font-medium text-lg">${mes}</p>
             <p class="text-sm">Valor: R$ 1.000</p>
             ${comprovante ? `<p class='text-xs text-green-600'>📎 Comprovante salvo</p>` : ''}
+            ${bloqueado && comprovante ? `<a href="${comprovante}" download="comprovante_${mes}.pdf" class="text-xs text-blue-600 underline block mt-1">⬇️ Baixar comprovante</a>` : ''}
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+        `;
+
+        if (!bloqueado) {
+          innerHTML += `
             <button onclick="alternarPagamento(${index})" class="${pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">
               ${pago ? '✅ Pago' : '❌ Falta pagar'}
             </button>
             <button onclick="enviarComprovante(${index})" class="text-sm text-blue-600 underline">Salvar comprovante</button>
-          </div>
-        `;
+          `;
+        }
 
+        if (pago && comprovante && !bloqueado) {
+          innerHTML += `
+            <button onclick="salvarPagamentoFinal(${index})" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+              💾 Salvar pagamento
+            </button>
+          `;
+        }
+
+        innerHTML += '</div>';
+        div.innerHTML = innerHTML;
         container.appendChild(div);
       });
     }
 
     function alternarPagamento(index) {
+      const bloqueado = localStorage.getItem(`parcela_${index}_bloqueada`) === 'true';
+      if (bloqueado) {
+        alert("Pagamento já salvo e bloqueado.");
+        return;
+      }
+
       const atual = localStorage.getItem(`parcela_${index}_paga`) === 'true';
       localStorage.setItem(`parcela_${index}_paga`, !atual);
       carregarParcelas();
     }
 
     function enviarComprovante(index) {
+      const bloqueado = localStorage.getItem(`parcela_${index}_bloqueada`) === 'true';
+      if (bloqueado) {
+        alert("Pagamento já salvo. Não é possível alterar o comprovante.");
+        return;
+      }
+
       const input = document.getElementById('comprovanteInput');
       input.onchange = () => {
         const file = input.files[0];
@@ -137,6 +165,12 @@
         input.value = '';
       };
       input.click();
+    }
+
+    function salvarPagamentoFinal(index) {
+      localStorage.setItem(`parcela_${index}_bloqueada`, 'true');
+      alert("Pagamento salvo e bloqueado com sucesso.");
+      carregarParcelas();
     }
 
     function mostrarPagas() {
