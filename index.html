@@ -114,6 +114,14 @@
             </button>
             <button onclick="enviarComprovante(${index})" class="text-sm text-blue-600 underline">Salvar comprovante</button>
           `;
+          if (comprovante) {
+            innerHTML += `
+              <button onclick="excluirComprovante(${index})" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>
+            `;
+          }
+          innerHTML += `
+            <button onclick="excluirMes(${index})" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>
+          `;
         }
 
         if (pago && comprovante && !bloqueado) {
@@ -165,6 +173,45 @@
         input.value = '';
       };
       input.click();
+    }
+
+    function excluirComprovante(index) {
+      if (confirm("Tem certeza que deseja excluir o comprovante?")) {
+        localStorage.removeItem(`parcela_${index}_comprovante`);
+        carregarParcelas();
+      }
+    }
+
+    function excluirMes(index) {
+      const bloqueado = localStorage.getItem(`parcela_${index}_bloqueada`) === 'true';
+      if (bloqueado) {
+        alert("Não é possível excluir um mês com pagamento já salvo.");
+        return;
+      }
+
+      if (confirm("Deseja excluir este mês e todas as informações dele?")) {
+        const meses = getMesesSalvos();
+        meses.splice(index, 1);
+        salvarMeses(meses);
+
+        localStorage.removeItem(`parcela_${index}_paga`);
+        localStorage.removeItem(`parcela_${index}_comprovante`);
+        localStorage.removeItem(`parcela_${index}_bloqueada`);
+
+        // Reindexa as chaves para manter os índices em ordem
+        const novosMeses = getMesesSalvos();
+        novosMeses.forEach((_, i) => {
+          ['paga', 'comprovante', 'bloqueada'].forEach((chave) => {
+            const antigo = localStorage.getItem(`parcela_${i + 1}_${chave}`);
+            if (antigo !== null) {
+              localStorage.setItem(`parcela_${i}_${chave}`, antigo);
+              localStorage.removeItem(`parcela_${i + 1}_${chave}`);
+            }
+          });
+        });
+
+        carregarParcelas();
+      }
     }
 
     function salvarPagamentoFinal(index) {
