@@ -29,11 +29,17 @@
 </div>
 <input type="file" id="comprovanteInput" class="hidden" accept="image/*,application/pdf" />
 <script>
-const firebaseConfig = { apiKey: "SUA_API_KEY", authDomain: "SEU_AUTH_DOMAIN", projectId: "SEU_PROJECT_ID", storageBucket: "SEU_STORAGE_BUCKET", messagingSenderId: "SUA_MESSAGING_SENDER_ID", appId: "SUA_APP_ID" };
+const firebaseConfig = {
+  apiKey: "AIzaSyCP-B-0QlYwGDqGfI20c_IC3P1MXMLC3BWQ",
+  authDomain: "pagamento-casa-rio-das-ostras.firebaseapp.com",
+  projectId: "pagamento-casa-rio-das-ostras",
+  storageBucket: "pagamento-casa-rio-das-ostras.appspot.com",
+  messagingSenderId: "368425536087",
+  appId: "1:368425536087:web:366cbd787501b13639b112"
+};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
 function carregarParcelasTempoReal() {
   db.collection('parcelas').onSnapshot((snapshot) => {
     const container = document.getElementById('parcelas');
@@ -45,18 +51,15 @@ function carregarParcelasTempoReal() {
     }).forEach((doc) => {
       const data = doc.data();
       const mes = doc.id;
-      const pago = data.pago;
-      const comprovanteUrl = data.comprovanteUrl;
-      const bloqueado = data.bloqueado;
       const div = document.createElement('div');
-      div.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded-lg space-y-2 md:space-y-0 ${pago ? 'paid' : 'bg-gray-50'}`;
-      let innerHTML = `<div><p class="font-medium text-lg">${mes}</p><p class="text-sm">Valor: R$ 1.000</p>${comprovanteUrl ? `<a href="${comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline block mt-1">📎 Comprovante</a>` : ''}${bloqueado ? `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>` : ''}</div><div class="flex items-center gap-2 flex-wrap">`;
-      if (!bloqueado) {
-        innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>`;
-        if (comprovanteUrl) { innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`; }
+      div.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded-lg space-y-2 md:space-y-0 ${data.pago ? 'paid' : 'bg-gray-50'}`;
+      let innerHTML = `<div><p class="font-medium text-lg">${mes}</p><p class="text-sm">Valor: R$ 1.000</p>${data.comprovanteUrl ? `<a href="${data.comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline block mt-1">📎 Comprovante</a>` : ''}${data.bloqueado ? `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>` : ''}</div><div class="flex items-center gap-2 flex-wrap">`;
+      if (!data.bloqueado) {
+        innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${data.pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${data.pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>`;
+        if (data.comprovanteUrl) { innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`; }
         innerHTML += `<button onclick="excluirMes('${mes}', true)" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
       }
-      if (pago && comprovanteUrl && !bloqueado) {
+      if (data.pago && data.comprovanteUrl && !data.bloqueado) {
         innerHTML += `<button onclick="salvarPagamentoFinal('${mes}')" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">💾 Salvar pagamento</button>`;
       }
       innerHTML += '</div>';
@@ -65,31 +68,26 @@ function carregarParcelasTempoReal() {
     });
   });
 }
-
 async function adicionarNovoMes() {
   const snapshot = await db.collection('parcelas').get();
   let todosMeses = snapshot.docs.map(doc => doc.id);
-  console.log('Meses encontrados:', todosMeses);
   let ordenados = todosMeses.sort((a, b) => {
     const [ma, aa] = a.split('-');
     const [mb, ab] = b.split('-');
     return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
   });
   let ultimoMes = ordenados[ordenados.length -1] || "Dez-26";
-  console.log('Último mês:', ultimoMes);
   let [mesTexto, anoTexto] = ultimoMes.split('-');
   let indiceMes = nomesMeses.indexOf(mesTexto);
   let ano = parseInt(anoTexto);
   indiceMes++;
   if (indiceMes > 11) { indiceMes = 0; ano++; }
   const novoMes = `${nomesMeses[indiceMes]}-${ano}`;
-  console.log('Novo mês a adicionar:', novoMes);
   const novoDoc = await db.collection('parcelas').doc(novoMes).get();
   if (novoDoc.exists) return alert("Mês já existe!");
   await db.collection('parcelas').doc(novoMes).set({ mes: novoMes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false });
   alert(`Novo mês ${novoMes} adicionado!`);
 }
-
 window.onload = carregarParcelasTempoReal;
 </script>
 </body>
