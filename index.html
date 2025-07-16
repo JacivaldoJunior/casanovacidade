@@ -20,6 +20,7 @@
 <div class="mt-4 flex flex-wrap gap-2">
 <button onclick="mostrarPagas()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Ver parcelas pagas ✅</button>
 <button onclick="adicionarNovoMes()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">➕ Adicionar novo mês</button>
+<button onclick="inicializarMeses()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">⚙️ Inicializar meses</button>
 </div>
 </div>
 <div class="md:w-1/2">
@@ -67,6 +68,16 @@ function carregarParcelasTempoReal() {
       container.appendChild(div);
     });
   });
+}
+async function inicializarMeses() {
+  const iniciais = ["Jun-25", "Jul-25", "Ago-25", "Set-25", "Out-25", "Nov-25", "Dez-25", "Jan-26", "Fev-26", "Mar-26", "Abr-26", "Mai-26", "Jun-26", "Jul-26", "Ago-26", "Set-26", "Out-26", "Nov-26", "Dez-26"];
+  const batch = db.batch();
+  iniciais.forEach(mes => {
+    const docRef = db.collection('parcelas').doc(mes);
+    batch.set(docRef, { mes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false });
+  });
+  await batch.commit();
+  alert("Meses iniciais criados!");
 }
 async function adicionarNovoMes() {
   const snapshot = await db.collection('parcelas').get();
