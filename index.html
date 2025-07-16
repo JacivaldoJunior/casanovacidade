@@ -55,7 +55,7 @@
     projectId: "SEU_PROJECT_ID",
     storageBucket: "SEU_STORAGE_BUCKET",
     messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-    appId: "SEU_APP_ID"
+    appId: "SUA_APP_ID"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -76,11 +76,11 @@
       iniciais.forEach(mes => {
         const docRef = db.collection('parcelas').doc(mes);
         batch.set(docRef, {
-          mes: mes,           // string
-          valor: 1000,        // number
-          pago: false,        // boolean
-          comprovanteUrl: "", // string
-          bloqueado: false    // boolean
+          mes: mes,
+          valor: 1000,
+          pago: false,
+          comprovanteUrl: "",
+          bloqueado: false
         });
       });
       await batch.commit();
@@ -176,7 +176,7 @@
         return;
       }
 
-      const urlCloudinary = "https://api.cloudinary.com/v1_1/SEU_CLOUD_NAME/upload";
+      const urlCloudinary = "https://api.cloudinary.com/v1_1/meucloud123/upload"; // <-- substitua aqui
       const uploadPreset = "pagamento_público";
 
       const formData = new FormData();
@@ -285,11 +285,11 @@
     }
 
     await db.collection('parcelas').doc(novoMes).set({
-      mes: novoMes,         // string
-      valor: 1000,          // number
-      pago: false,          // boolean
-      comprovanteUrl: "",   // string
-      bloqueado: false      // boolean
+      mes: novoMes,
+      valor: 1000,
+      pago: false,
+      comprovanteUrl: "",
+      bloqueado: false
     });
 
     carregarParcelas();
