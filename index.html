@@ -10,293 +10,141 @@
       background-color: #d1fae5;
     }
   </style>
-
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
   <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
     <h1 class="text-3xl font-bold mb-4 text-green-700">Pagamento Casa Rio das Ostras</h1>
-    
     <div class="flex flex-col md:flex-row gap-6">
-      <!-- Parte Esquerda: Controle -->
       <div class="flex-1">
         <p class="mb-2 text-lg">💰 <strong>Entrada:</strong> R$ 50.000</p>
         <p class="mb-4 text-lg">📅 <strong>Mensalidade:</strong> R$ 1.000</p>
-
         <div id="parcelas" class="space-y-2"></div>
-
         <div class="mt-4 flex flex-wrap gap-2">
-          <button onclick="mostrarPagas()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            Ver parcelas pagas ✅
-          </button>
-          <button onclick="adicionarNovoMes()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            ➕ Adicionar novo mês
-          </button>
+          <button onclick="mostrarPagas()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Ver parcelas pagas ✅</button>
+          <button onclick="adicionarNovoMes()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">➕ Adicionar novo mês</button>
         </div>
       </div>
-
-      <!-- Parte Direita: Imagem -->
       <div class="md:w-1/2">
         <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" alt="Casa" class="rounded-xl shadow-md" />
       </div>
     </div>
   </div>
-
-  <!-- Input oculto para comprovante -->
   <input type="file" id="comprovanteInput" class="hidden" accept="image/*,application/pdf" />
-
 <script>
-  // Config Firebase - substitua pelos seus dados do Firebase Console
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_AUTH_DOMAIN",
-    projectId: "SEU_PROJECT_ID",
-    storageBucket: "SEU_STORAGE_BUCKET",
-    messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-    appId: "SUA_APP_ID"
-  };
+const firebaseConfig = { apiKey: "SUA_API_KEY", authDomain: "SEU_AUTH_DOMAIN", projectId: "SEU_PROJECT_ID", storageBucket: "SEU_STORAGE_BUCKET", messagingSenderId: "SEU_MESSAGING_SENDER_ID", appId: "SUA_APP_ID" };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-  // Busca meses salvos no Firestore, cria meses iniciais se não existir
-  async function getMesesSalvos() {
-    const snapshot = await db.collection('parcelas').orderBy('mes').get();
-    if (snapshot.empty) {
-      const iniciais = [
-        "Jun/25", "Jul/25", "Ago/25", "Set/25", "Out/25", "Nov/25", "Dez/25",
-        "Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26",
-        "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"
-      ];
-      const batch = db.batch();
-      iniciais.forEach(mes => {
-        const docRef = db.collection('parcelas').doc(mes);
-        batch.set(docRef, {
-          mes: mes,
-          valor: 1000,
-          pago: false,
-          comprovanteUrl: "",
-          bloqueado: false
-        });
-      });
-      await batch.commit();
-      return iniciais;
-    } else {
-      return snapshot.docs.map(doc => doc.data().mes);
-    }
-  }
-
-  async function carregarParcelas() {
-    const meses = await getMesesSalvos();
+function carregarParcelasTempoReal() {
+  db.collection('parcelas').onSnapshot((snapshot) => {
     const container = document.getElementById('parcelas');
     container.innerHTML = '';
-
-    for (const mes of meses) {
-      const doc = await db.collection('parcelas').doc(mes).get();
-      if (!doc.exists) continue;
+    snapshot.docs.sort((a, b) => {
+      const [ma, aa] = a.id.split('/');
+      const [mb, ab] = b.id.split('/');
+      return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
+    }).forEach((doc) => {
       const data = doc.data();
-
+      const mes = data.mes;
       const pago = data.pago;
       const comprovanteUrl = data.comprovanteUrl;
       const bloqueado = data.bloqueado;
-
       const div = document.createElement('div');
       div.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded-lg space-y-2 md:space-y-0 ${pago ? 'paid' : 'bg-gray-50'}`;
-
-      let innerHTML = `
-        <div>
-          <p class="font-medium text-lg">${mes}</p>
-          <p class="text-sm">Valor: R$ 1.000</p>
-          ${comprovanteUrl ? `<a href="${comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline block mt-1">📎 Comprovante</a>` : ''}
-          ${bloqueado ? `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>` : ''}
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-      `;
-
+      let innerHTML = `<div><p class="font-medium text-lg">${mes}</p><p class="text-sm">Valor: R$ 1.000</p>${comprovanteUrl ? `<a href="${comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline block mt-1">📎 Comprovante</a>` : ''}${bloqueado ? `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>` : ''}</div><div class="flex items-center gap-2 flex-wrap">`;
       if (!bloqueado) {
-        innerHTML += `
-          <button onclick="alternarPagamento('${mes}')" class="${pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">
-            ${pago ? '✅ Pago' : '❌ Falta pagar'}
-          </button>
-          <button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>
-        `;
-        if (comprovanteUrl) {
-          innerHTML += `
-            <button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>
-          `;
-        }
-        innerHTML += `
-          <button onclick="excluirMes('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>
-        `;
+        innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>`;
+        if (comprovanteUrl) { innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`; }
+        innerHTML += `<button onclick="excluirMes('${mes}', true)" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
       }
       if (pago && comprovanteUrl && !bloqueado) {
-        innerHTML += `
-          <button onclick="salvarPagamentoFinal('${mes}')" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-            💾 Salvar pagamento
-          </button>
-        `;
+        innerHTML += `<button onclick="salvarPagamentoFinal('${mes}')" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">💾 Salvar pagamento</button>`;
       }
       innerHTML += '</div>';
       div.innerHTML = innerHTML;
       container.appendChild(div);
-    }
-  }
-
-  async function alternarPagamento(mes) {
-    const docRef = db.collection('parcelas').doc(mes);
-    const doc = await docRef.get();
-    if (!doc.exists) {
-      alert("Parcela não encontrada.");
-      return;
-    }
-    if (doc.data().bloqueado) {
-      alert("Pagamento já salvo e bloqueado.");
-      return;
-    }
-    await docRef.update({ pago: !doc.data().pago });
-    carregarParcelas();
-  }
-
-  // Função adaptada para upload no Cloudinary usando predefinição pública
-  function enviarComprovante(mes) {
-    const input = document.getElementById('comprovanteInput');
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      const docRef = db.collection('parcelas').doc(mes);
-      const doc = await docRef.get();
-      if (doc.data().bloqueado) {
-        alert("Pagamento bloqueado. Não é possível alterar o comprovante.");
-        input.value = '';
-        return;
-      }
-
-      const urlCloudinary = "https://api.cloudinary.com/v1_1/meucloud123/upload"; // <-- substitua aqui
-      const uploadPreset = "pagamento_público";
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
-
-      try {
-        const response = await fetch(urlCloudinary, {
-          method: "POST",
-          body: formData
-        });
-        const data = await response.json();
-        if (data.secure_url) {
-          await docRef.update({ comprovanteUrl: data.secure_url });
-          alert("Comprovante salvo com sucesso!");
-          carregarParcelas();
-        } else {
-          alert("Erro no upload do comprovante.");
-        }
-      } catch (error) {
-        alert("Erro ao enviar comprovante: " + error.message);
-      }
-
-      input.value = '';
-    };
-    input.click();
-  }
-
-  async function excluirComprovante(mes) {
-    if (!confirm("Tem certeza que deseja excluir o comprovante?")) return;
-
-    const docRef = db.collection('parcelas').doc(mes);
-    const doc = await docRef.get();
-    if (!doc.exists) {
-      alert("Parcela não encontrada.");
-      return;
-    }
-    if (doc.data().bloqueado) {
-      alert("Pagamento bloqueado. Não é possível excluir o comprovante.");
-      return;
-    }
-
-    await docRef.update({ comprovanteUrl: "" });
-    alert("Comprovante excluído.");
-    carregarParcelas();
-  }
-
-  async function excluirMes(mes) {
-    if (!confirm("Tem certeza que deseja excluir este mês e todos os dados associados?")) return;
-
-    const docRef = db.collection('parcelas').doc(mes);
-    const doc = await docRef.get();
-    if (!doc.exists) {
-      alert("Parcela não encontrada.");
-      return;
-    }
-    if (doc.data().bloqueado) {
-      alert("Pagamento bloqueado. Não é possível excluir o mês.");
-      return;
-    }
-
-    await docRef.delete();
-    carregarParcelas();
-  }
-
-  async function salvarPagamentoFinal(mes) {
-    const docRef = db.collection('parcelas').doc(mes);
-    await docRef.update({ bloqueado: true });
-    alert("Pagamento salvo e bloqueado com sucesso.");
-    carregarParcelas();
-  }
-
-  async function mostrarPagas() {
-    const snapshot = await db.collection('parcelas').where('pago', '==', true).get();
-    if (snapshot.empty) {
-      alert("Nenhuma parcela paga ainda.");
-      return;
-    }
-    const pagas = snapshot.docs.map(doc => doc.data().mes);
-    alert(`Parcelas pagas:\n\n${pagas.join('\n')}`);
-  }
-
-  async function adicionarNovoMes() {
-    const snapshot = await db.collection('parcelas').orderBy('mes', 'desc').limit(1).get();
-    let ultimoMes = "Dez/26";
-    if (!snapshot.empty) {
-      ultimoMes = snapshot.docs[0].data().mes;
-    }
-
-    let [mesTexto, anoTexto] = ultimoMes.split('/');
-    let indiceMes = nomesMeses.indexOf(mesTexto);
-    let ano = parseInt(anoTexto);
-
-    indiceMes++;
-    if (indiceMes > 11) {
-      indiceMes = 0;
-      ano++;
-    }
-
-    const novoMes = `${nomesMeses[indiceMes]}/${ano}`;
-
-    const novoDoc = await db.collection('parcelas').doc(novoMes).get();
-    if (novoDoc.exists) {
-      alert("Mês já existe!");
-      return;
-    }
-
-    await db.collection('parcelas').doc(novoMes).set({
-      mes: novoMes,
-      valor: 1000,
-      pago: false,
-      comprovanteUrl: "",
-      bloqueado: false
     });
-
-    carregarParcelas();
+  });
+}
+async function alternarPagamento(mes) {
+  const docRef = db.collection('parcelas').doc(mes);
+  const doc = await docRef.get();
+  if (doc.data().bloqueado) return alert("Pagamento já salvo e bloqueado.");
+  await docRef.update({ pago: !doc.data().pago });
+}
+function enviarComprovante(mes) {
+  const input = document.getElementById('comprovanteInput');
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const docRef = db.collection('parcelas').doc(mes);
+    const doc = await docRef.get();
+    if (doc.data().bloqueado) return alert("Pagamento bloqueado. Não é possível alterar o comprovante.");
+    const urlCloudinary = "https://api.cloudinary.com/v1_1/do6l5tkex/upload";
+    const uploadPreset = "pagamento_público";
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+    try {
+      const response = await fetch(urlCloudinary, { method: "POST", body: formData });
+      const data = await response.json();
+      if (data.secure_url) {
+        await docRef.update({ comprovanteUrl: data.secure_url });
+        alert("Comprovante salvo com sucesso!");
+      } else { alert("Erro no upload do comprovante."); }
+    } catch (error) { alert("Erro ao enviar comprovante: " + error.message); }
+    input.value = '';
+  };
+  input.click();
+}
+async function excluirComprovante(mes) {
+  if (!confirm("Tem certeza que deseja excluir o comprovante?")) return;
+  const docRef = db.collection('parcelas').doc(mes);
+  await docRef.update({ comprovanteUrl: "" });
+}
+async function excluirMes(mes, forcar = false) {
+  if (!confirm("Tem certeza que deseja excluir este mês?")) return;
+  const docRef = db.collection('parcelas').doc(mes);
+  const doc = await docRef.get();
+  if (doc.exists) {
+    if (doc.data().bloqueado && !forcar) return alert("Pagamento bloqueado. Não é possível excluir o mês.");
+    await docRef.delete();
   }
-
-  window.onload = carregarParcelas;
+}
+async function salvarPagamentoFinal(mes) {
+  const docRef = db.collection('parcelas').doc(mes);
+  await docRef.update({ bloqueado: true });
+  alert("Pagamento salvo e bloqueado com sucesso.");
+}
+async function mostrarPagas() {
+  const snapshot = await db.collection('parcelas').where('pago', '==', true).get();
+  if (snapshot.empty) return alert("Nenhuma parcela paga ainda.");
+  const pagas = snapshot.docs.map(doc => doc.data().mes);
+  alert(`Parcelas pagas:\n\n${pagas.join('\n')}`);
+}
+async function adicionarNovoMes() {
+  const snapshot = await db.collection('parcelas').get();
+  let todosMeses = snapshot.docs.map(doc => doc.id);
+  let ordenados = todosMeses.sort((a, b) => {
+    const [ma, aa] = a.split('/');
+    const [mb, ab] = b.split('/');
+    return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
+  });
+  let ultimoMes = ordenados[ordenados.length -1] || "Dez/26";
+  let [mesTexto, anoTexto] = ultimoMes.split('/');
+  let indiceMes = nomesMeses.indexOf(mesTexto);
+  let ano = parseInt(anoTexto);
+  indiceMes++;
+  if (indiceMes > 11) { indiceMes = 0; ano++; }
+  const novoMes = `${nomesMeses[indiceMes]}/${ano}`;
+  const novoDoc = await db.collection('parcelas').doc(novoMes).get();
+  if (novoDoc.exists) return alert("Mês já existe!");
+  await db.collection('parcelas').doc(novoMes).set({ mes: novoMes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false });
+}
+window.onload = carregarParcelasTempoReal;
 </script>
-
 </body>
 </html>
