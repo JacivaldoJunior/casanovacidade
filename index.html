@@ -29,7 +29,7 @@
 </div>
 <input type="file" id="comprovanteInput" class="hidden" accept="image/*,application/pdf" />
 <script>
-const firebaseConfig = { apiKey: "SUA_API_KEY", authDomain: "SEU_AUTH_DOMAIN", projectId: "SEU_PROJECT_ID", storageBucket: "SEU_STORAGE_BUCKET", messagingSenderId: "SEU_MESSAGING_SENDER_ID", appId: "SUA_APP_ID" };
+const firebaseConfig = { apiKey: "SUA_API_KEY", authDomain: "SEU_AUTH_DOMAIN", projectId: "SEU_PROJECT_ID", storageBucket: "SEU_STORAGE_BUCKET", messagingSenderId: "SUA_MESSAGING_SENDER_ID", appId: "SUA_APP_ID" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -39,13 +39,12 @@ function carregarParcelasTempoReal() {
     const container = document.getElementById('parcelas');
     container.innerHTML = '';
     snapshot.docs.sort((a, b) => {
-      const [ma, aa] = a.id.split('/');
-      const [mb, ab] = b.id.split('/');
+      const [ma, aa] = a.id.split('-');
+      const [mb, ab] = b.id.split('-');
       return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
     }).forEach((doc) => {
       const data = doc.data();
       const mes = doc.id;
-      console.log('Renderizando mês:', mes);
       const pago = data.pago;
       const comprovanteUrl = data.comprovanteUrl;
       const bloqueado = data.bloqueado;
@@ -72,18 +71,18 @@ async function adicionarNovoMes() {
   let todosMeses = snapshot.docs.map(doc => doc.id);
   console.log('Meses encontrados:', todosMeses);
   let ordenados = todosMeses.sort((a, b) => {
-    const [ma, aa] = a.split('/');
-    const [mb, ab] = b.split('/');
+    const [ma, aa] = a.split('-');
+    const [mb, ab] = b.split('-');
     return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
   });
-  let ultimoMes = ordenados[ordenados.length -1] || "Dez/26";
+  let ultimoMes = ordenados[ordenados.length -1] || "Dez-26";
   console.log('Último mês:', ultimoMes);
-  let [mesTexto, anoTexto] = ultimoMes.split('/');
+  let [mesTexto, anoTexto] = ultimoMes.split('-');
   let indiceMes = nomesMeses.indexOf(mesTexto);
   let ano = parseInt(anoTexto);
   indiceMes++;
   if (indiceMes > 11) { indiceMes = 0; ano++; }
-  const novoMes = `${nomesMeses[indiceMes]}/${ano}`;
+  const novoMes = `${nomesMeses[indiceMes]}-${ano}`;
   console.log('Novo mês a adicionar:', novoMes);
   const novoDoc = await db.collection('parcelas').doc(novoMes).get();
   if (novoDoc.exists) return alert("Mês já existe!");
