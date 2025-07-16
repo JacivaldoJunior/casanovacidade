@@ -30,14 +30,7 @@
 </div>
 <input type="file" id="comprovanteInput" class="hidden" accept="image/*,application/pdf" />
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCP-B-0QlYwGDqGfI20c_IC3P1MXMLC3BWQ",
-  authDomain: "pagamento-casa-rio-das-ostras.firebaseapp.com",
-  projectId: "pagamento-casa-rio-das-ostras",
-  storageBucket: "pagamento-casa-rio-das-ostras.appspot.com",
-  messagingSenderId: "368425536087",
-  appId: "1:368425536087:web:366cbd787501b13639b112"
-};
+const firebaseConfig = { apiKey: "AIzaSyCP-B-0QlYwGDqGfI20c_IC3P1MXMLC3BWQ", authDomain: "pagamento-casa-rio-das-ostras.firebaseapp.com", projectId: "pagamento-casa-rio-das-ostras", storageBucket: "pagamento-casa-rio-das-ostras.appspot.com", messagingSenderId: "368425536087", appId: "1:368425536087:web:366cbd787501b13639b112" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -54,10 +47,15 @@ function carregarParcelasTempoReal() {
       const mes = doc.id;
       const div = document.createElement('div');
       div.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded-lg space-y-2 md:space-y-0 ${data.pago ? 'paid' : 'bg-gray-50'}`;
-      let innerHTML = `<div><p class="font-medium text-lg">${mes}</p><p class="text-sm">Valor: R$ 1.000</p>${data.comprovanteUrl ? `<a href="${data.comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline block mt-1">📎 Comprovante</a>` : ''}${data.bloqueado ? `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>` : ''}</div><div class="flex items-center gap-2 flex-wrap">`;
+      let innerHTML = `<div><p class="font-medium text-lg">${mes}</p><p class="text-sm">Valor: R$ 1.000</p>`;
+      if (data.comprovanteUrl) {
+        innerHTML += `<div class="flex items-center gap-2 mt-1"><a href="${data.comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline">📎 Comprovante</a><a href="${data.comprovanteUrl}" download class="text-xs text-gray-600 underline">⬇️ Baixar</a></div>`;
+      }
+      if (data.bloqueado) innerHTML += `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>`;
+      innerHTML += `</div><div class="flex items-center gap-2 flex-wrap">`;
       if (!data.bloqueado) {
         innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${data.pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${data.pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>`;
-        if (data.comprovanteUrl) { innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`; }
+        if (data.comprovanteUrl) innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`;
         innerHTML += `<button onclick="excluirMes('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
       }
       if (data.pago && data.comprovanteUrl && !data.bloqueado) {
@@ -69,18 +67,11 @@ function carregarParcelasTempoReal() {
     });
   });
 }
-async function excluirMes(mes) {
-  if (!confirm("Tem certeza que deseja excluir este mês?")) return;
-  await db.collection('parcelas').doc(mes).delete();
-  alert(`Mês ${mes} excluído!`);
-}
+async function excluirMes(mes) { if (!confirm("Tem certeza que deseja excluir este mês?")) return; await db.collection('parcelas').doc(mes).delete(); alert(`Mês ${mes} excluído!`); }
 async function inicializarMeses() {
   const iniciais = ["Jun-25", "Jul-25", "Ago-25", "Set-25", "Out-25", "Nov-25", "Dez-25", "Jan-26", "Fev-26", "Mar-26", "Abr-26", "Mai-26", "Jun-26", "Jul-26", "Ago-26", "Set-26", "Out-26", "Nov-26", "Dez-26"];
   const batch = db.batch();
-  iniciais.forEach(mes => {
-    const docRef = db.collection('parcelas').doc(mes);
-    batch.set(docRef, { mes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false });
-  });
+  iniciais.forEach(mes => { const docRef = db.collection('parcelas').doc(mes); batch.set(docRef, { mes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false }); });
   await batch.commit();
   alert("Meses iniciais criados!");
 }
