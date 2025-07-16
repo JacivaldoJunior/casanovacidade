@@ -58,7 +58,7 @@ function carregarParcelasTempoReal() {
       if (!data.bloqueado) {
         innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${data.pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${data.pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>`;
         if (data.comprovanteUrl) { innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`; }
-        innerHTML += `<button onclick="excluirMes('${mes}', true)" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
+        innerHTML += `<button onclick="excluirMes('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
       }
       if (data.pago && data.comprovanteUrl && !data.bloqueado) {
         innerHTML += `<button onclick="salvarPagamentoFinal('${mes}')" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">💾 Salvar pagamento</button>`;
@@ -68,6 +68,11 @@ function carregarParcelasTempoReal() {
       container.appendChild(div);
     });
   });
+}
+async function excluirMes(mes) {
+  if (!confirm("Tem certeza que deseja excluir este mês?")) return;
+  await db.collection('parcelas').doc(mes).delete();
+  alert(`Mês ${mes} excluído!`);
 }
 async function inicializarMeses() {
   const iniciais = ["Jun-25", "Jul-25", "Ago-25", "Set-25", "Out-25", "Nov-25", "Dez-25", "Jan-26", "Fev-26", "Mar-26", "Abr-26", "Mai-26", "Jun-26", "Jul-26", "Ago-26", "Set-26", "Out-26", "Nov-26", "Dez-26"];
