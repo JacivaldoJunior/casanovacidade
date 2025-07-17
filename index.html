@@ -67,6 +67,17 @@ function carregarParcelasTempoReal() {
     });
   });
 }
+async function enviarComprovante(mes) {
+  const input = document.getElementById('comprovanteInput');
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    alert(`Arquivo para ${mes} selecionado: ${file.name}`);
+    // Aqui você implementaria a integração com Cloudinary
+    input.value = '';
+  };
+  input.click();
+}
 async function excluirMes(mes) { if (!confirm("Tem certeza que deseja excluir este mês?")) return; await db.collection('parcelas').doc(mes).delete(); alert(`Mês ${mes} excluído!`); }
 async function inicializarMeses() {
   const iniciais = ["Jun-25", "Jul-25", "Ago-25", "Set-25", "Out-25", "Nov-25", "Dez-25", "Jan-26", "Fev-26", "Mar-26", "Abr-26", "Mai-26", "Jun-26", "Jul-26", "Ago-26", "Set-26", "Out-26", "Nov-26", "Dez-26"];
