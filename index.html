@@ -35,14 +35,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 function carregarParcelasTempoReal() {
-  db.collection('parcelas').onSnapshot((snapshot) => {
+  db.collection('parcelas').onSnapshot(snapshot => {
     const container = document.getElementById('parcelas');
     container.innerHTML = '';
     snapshot.docs.sort((a, b) => {
       const [ma, aa] = a.id.split('-');
       const [mb, ab] = b.id.split('-');
       return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
-    }).forEach((doc) => {
+    }).forEach(doc => {
       const data = doc.data();
       const mes = doc.id;
       const div = document.createElement('div');
@@ -76,7 +76,7 @@ async function enviarComprovante(mes) {
   input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
-    const urlCloudinary = "https://api.cloudinary.com/v1_1/do6l5tkex/upload";
+    const urlCloudinary = "https://api.cloudinary.com/v1_1/do6l5tkex/raw/upload";
     const uploadPreset = "pagamento_público";
     const formData = new FormData();
     formData.append("file", file);
