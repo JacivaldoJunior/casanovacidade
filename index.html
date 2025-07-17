@@ -69,7 +69,7 @@ async function enviarComprovante(mes) {
   input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
-    const urlCloudinary = "https://api.cloudinary.com/v1_1/meucloud123/upload";
+    const urlCloudinary = "https://api.cloudinary.com/v1_1/SEU_CLOUD_NAME/upload";
     const uploadPreset = "pagamento_público";
     const formData = new FormData();
     formData.append("file", file);
@@ -77,11 +77,12 @@ async function enviarComprovante(mes) {
     try {
       const response = await fetch(urlCloudinary, { method: "POST", body: formData });
       const data = await response.json();
+      console.log("Resposta Cloudinary:", data);
       if (data.secure_url) {
         await db.collection('parcelas').doc(mes).update({ comprovanteUrl: data.secure_url, pago: true });
         alert("Comprovante salvo e marcado como pago!");
       } else {
-        alert("Erro no upload do comprovante.");
+        alert("Erro no upload do comprovante: " + JSON.stringify(data));
       }
     } catch (error) {
       alert("Erro ao enviar comprovante: " + error.message);
