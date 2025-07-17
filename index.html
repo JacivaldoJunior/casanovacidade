@@ -49,20 +49,24 @@ function carregarParcelasTempoReal() {
       div.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-3 border rounded-lg space-y-2 md:space-y-0 ${data.pago ? 'paid' : 'bg-gray-50'}`;
       let innerHTML = `<div><p class="font-medium text-lg">${mes}</p><p class="text-sm">Valor: R$ 1.000</p>`;
       if (data.comprovanteUrl) {
-        innerHTML += `<div class="flex items-center gap-2 mt-1"><a href="${data.comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline">📎 Comprovante</a><a href="${data.comprovanteUrl}" download class="text-xs text-gray-600 underline">⬇️ Baixar</a></div>`;
+        innerHTML += `<div class="flex items-center gap-2 mt-1"><a href="${data.comprovanteUrl}" target="_blank" class="text-xs text-blue-600 underline">📎 Comprovante</a><a href="${data.comprovanteUrl}" download class="text-xs text-gray-600 underline">⬇️ Baixar</a><button onclick="excluirComprovante('${mes}')" class="text-xs text-red-600 underline">🗑️ Excluir comprovante</button></div>`;
       }
       if (data.bloqueado) innerHTML += `<p class="text-green-700 font-semibold mt-1">Pagamento bloqueado</p>`;
       innerHTML += `</div><div class="flex items-center gap-2 flex-wrap">`;
       if (!data.bloqueado) {
-        innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${data.pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${data.pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button>`;
-        if (data.comprovanteUrl) innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`;
-        innerHTML += `<button onclick="excluirMes('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
+        innerHTML += `<button onclick="alternarPagamento('${mes}')" class="${data.pago ? 'bg-green-600' : 'bg-red-500'} text-white hover:opacity-90 px-3 py-1 rounded">${data.pago ? '✅ Pago' : '❌ Falta pagar'}</button><button onclick="enviarComprovante('${mes}')" class="text-sm text-blue-600 underline">Salvar comprovante</button><button onclick="excluirMes('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
       }
       innerHTML += '</div>';
       div.innerHTML = innerHTML;
       container.appendChild(div);
     });
   });
+}
+async function excluirComprovante(mes) {
+  if (confirm('Tem certeza que deseja excluir o comprovante?')) {
+    await db.collection('parcelas').doc(mes).update({ comprovanteUrl: '', pago: false });
+    alert('Comprovante excluído e marcado como não pago.');
+  }
 }
 async function enviarComprovante(mes) {
   const input = document.getElementById('comprovanteInput');
@@ -77,7 +81,6 @@ async function enviarComprovante(mes) {
     try {
       const response = await fetch(urlCloudinary, { method: "POST", body: formData });
       const data = await response.json();
-      console.log("Resposta Cloudinary:", data);
       if (data.secure_url) {
         await db.collection('parcelas').doc(mes).update({ comprovanteUrl: data.secure_url, pago: true });
         alert("Comprovante salvo e marcado como pago!");
