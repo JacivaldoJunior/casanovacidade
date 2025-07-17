@@ -63,9 +63,12 @@ function carregarParcelasTempoReal() {
   });
 }
 async function excluirComprovante(mes) {
-  if (confirm('Tem certeza que deseja excluir o comprovante?')) {
+  try {
     await db.collection('parcelas').doc(mes).update({ comprovanteUrl: '', pago: false });
     alert('Comprovante excluído e marcado como não pago.');
+  } catch (error) {
+    console.error('Erro ao excluir comprovante:', error);
+    alert('Erro ao excluir comprovante. Veja o console para detalhes.');
   }
 }
 async function enviarComprovante(mes) {
