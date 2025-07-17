@@ -58,9 +58,6 @@ function carregarParcelasTempoReal() {
         if (data.comprovanteUrl) innerHTML += `<button onclick="excluirComprovante('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir comprovante</button>`;
         innerHTML += `<button onclick="excluirMes('${mes}')" class="text-sm text-red-600 underline">🗑️ Excluir mês</button>`;
       }
-      if (data.pago && data.comprovanteUrl && !data.bloqueado) {
-        innerHTML += `<button onclick="salvarPagamentoFinal('${mes}')" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">💾 Salvar pagamento</button>`;
-      }
       innerHTML += '</div>';
       div.innerHTML = innerHTML;
       container.appendChild(div);
@@ -72,39 +69,26 @@ async function enviarComprovante(mes) {
   input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
-    alert(`Arquivo para ${mes} selecionado: ${file.name}`);
-    // Aqui você implementaria a integração com Cloudinary
+    const urlCloudinary = "https://api.cloudinary.com/v1_1/meucloud123/upload";
+    const uploadPreset = "pagamento_público";
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+    try {
+      const response = await fetch(urlCloudinary, { method: "POST", body: formData });
+      const data = await response.json();
+      if (data.secure_url) {
+        await db.collection('parcelas').doc(mes).update({ comprovanteUrl: data.secure_url, pago: true });
+        alert("Comprovante salvo e marcado como pago!");
+      } else {
+        alert("Erro no upload do comprovante.");
+      }
+    } catch (error) {
+      alert("Erro ao enviar comprovante: " + error.message);
+    }
     input.value = '';
   };
   input.click();
-}
-async function excluirMes(mes) { if (!confirm("Tem certeza que deseja excluir este mês?")) return; await db.collection('parcelas').doc(mes).delete(); alert(`Mês ${mes} excluído!`); }
-async function inicializarMeses() {
-  const iniciais = ["Jun-25", "Jul-25", "Ago-25", "Set-25", "Out-25", "Nov-25", "Dez-25", "Jan-26", "Fev-26", "Mar-26", "Abr-26", "Mai-26", "Jun-26", "Jul-26", "Ago-26", "Set-26", "Out-26", "Nov-26", "Dez-26"];
-  const batch = db.batch();
-  iniciais.forEach(mes => { const docRef = db.collection('parcelas').doc(mes); batch.set(docRef, { mes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false }); });
-  await batch.commit();
-  alert("Meses iniciais criados!");
-}
-async function adicionarNovoMes() {
-  const snapshot = await db.collection('parcelas').get();
-  let todosMeses = snapshot.docs.map(doc => doc.id);
-  let ordenados = todosMeses.sort((a, b) => {
-    const [ma, aa] = a.split('-');
-    const [mb, ab] = b.split('-');
-    return parseInt(aa) - parseInt(ab) || nomesMeses.indexOf(ma) - nomesMeses.indexOf(mb);
-  });
-  let ultimoMes = ordenados[ordenados.length -1] || "Dez-26";
-  let [mesTexto, anoTexto] = ultimoMes.split('-');
-  let indiceMes = nomesMeses.indexOf(mesTexto);
-  let ano = parseInt(anoTexto);
-  indiceMes++;
-  if (indiceMes > 11) { indiceMes = 0; ano++; }
-  const novoMes = `${nomesMeses[indiceMes]}-${ano}`;
-  const novoDoc = await db.collection('parcelas').doc(novoMes).get();
-  if (novoDoc.exists) return alert("Mês já existe!");
-  await db.collection('parcelas').doc(novoMes).set({ mes: novoMes, valor: 1000, pago: false, comprovanteUrl: "", bloqueado: false });
-  alert(`Novo mês ${novoMes} adicionado!`);
 }
 window.onload = carregarParcelasTempoReal;
 </script>
